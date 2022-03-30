@@ -10,7 +10,7 @@ env:
   MONGO_URL: 'mongodb://localhost:27017/candis-automatic-tests?replicaSet=rs0'
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
