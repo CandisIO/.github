@@ -1,0 +1,179 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        default: 'production'
+        required: false
+        type: string
+    secrets:
+      PUBLISH_PACKAGES:
+        required: true
+      AWS_ECR_ACCESS_KEY_ID:
+        required: true
+      AWS_ECR_SECRET_ACCESS_KEY:
+        required: true
+      AWS_ECR_REGION:
+        required: true
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_SECRET_ACCESS_KEY:
+        required: true
+      AWS_S3_REGION:
+        required: true
+      SPINNAKER_AUTH_USERNAME:
+        required: true
+      SPINNAKER_AUTH_PASSWORD:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js 16.13.2
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.13.2
+
+      - name: Setup npm
+        run: |
+          npm set @candisio:registry=https://npm.pkg.github.com
+          npm set "//npm.pkg.github.com/:_authToken=${{ secrets.PUBLISH_PACKAGES }}"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ECR_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_ECR_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_ECR_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+          IMAGE_TAG: ${{ github.sha }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --build-arg GITHUB_ACCESS_TOKEN=$GITHUB_ACCESS_TOKEN .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.7.1
+
+      - name: Set new image
+        uses: mikefarah/yq@master
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          cmd: export IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" && yq e '.image = env(IMAGE)' _infra/values.yaml -i  && yq e '.image = env(IMAGE)' _infra/values/values.prod.yaml -i && yq e '.image = env(IMAGE)' _infra/values/values.rc.yaml -i && yq e '.image = env(IMAGE)' _infra/values/values.dev.yaml -i
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_S3_REGION }}
+
+      - name: Package helm
+        id: helm-package
+        env:
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+          IMAGE_TAG: ${{ github.sha }}
+          ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+        run: |
+          BUCKET_NAME=$([[ "$ENVIRONMENT" == "production" ]] && echo "can-prod-build-artifacts" || echo "can-dev-build-artifacts")
+          mkdir $ECR_REPOSITORY
+          mkdir helm-otp
+          cp -a _infra/. $ECR_REPOSITORY
+          helm package $ECR_REPOSITORY --destination helm-otp
+          find helm-otp -name '*.tgz' | xargs -I '{}' mv {} helm-otp/chart.tgz
+          BUILD_ARTIFACT_BUCKET_NAME="$BUCKET_NAME"
+          BUILD_ARTIFACT_DIR="s3://$BUILD_ARTIFACT_BUCKET_NAME/helm/$ECR_REPOSITORY"
+          echo "Saving build artifacts to s3 directory: $BUILD_ARTIFACT_DIR"
+          aws s3 sync "helm-otp" $BUILD_ARTIFACT_DIR
+          aws s3 sync "$ECR_REPOSITORY/values" "$BUILD_ARTIFACT_DIR/values"
+
+      - name: Trigger spinnaker
+        id: trigger-spinnaker
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          SPINNAKER_AUTH_USERNAME: ${{ secrets.SPINNAKER_AUTH_USERNAME }}
+          SPINNAKER_AUTH_PASSWORD: ${{ secrets.SPINNAKER_AUTH_PASSWORD }}
+          WEBHOOK_URL: "https://spinnaker-api.my.candis.io/webhooks/webhook/${{ github.event.repository.name }}"
+          REPOZITORY_NAME: ${{ github.event.repository.name }}
+          ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+        run: |
+          BUILD_BUCKET=$([[ "$ENVIRONMENT" == "production" ]] && echo "can-prod-build-artifacts" || echo "can-dev-build-artifacts")
+          BUCKET_NAME="s3://$BUILD_BUCKET/helm/$REPOZITORY_NAME"
+          PAYLOAD_PROD=$(cat <<EOF
+          {
+              "artifacts": [
+                  {
+                      "name": "${BUCKET_NAME}/values/values.dev.yaml",
+                      "reference": "${BUCKET_NAME}/values/values.dev.yaml",
+                      "type": "s3/object"
+                  },
+                  {
+                      "name": "${BUCKET_NAME}/values/values.rc.yaml",
+                      "reference": "${BUCKET_NAME}/values/values.rc.yaml",
+                      "type": "s3/object"
+                  },
+                  {
+                      "name": "${BUCKET_NAME}/values/values.prod.yaml",
+                      "reference": "${BUCKET_NAME}/values/values.prod.yaml",
+                      "type": "s3/object"
+                  },
+                  {
+                      "name": "${BUCKET_NAME}/chart.tgz",
+                      "reference": "${BUCKET_NAME}/chart.tgz",
+                      "type": "s3/object"
+                  }
+              ],
+              "parameters": {
+          		"commitSha": "${IMAGE_TAG}"
+          	}
+          }
+          EOF
+          )
+          PAYLOAD_DEV=$(cat <<EOF
+          {
+              "artifacts": [
+                  {
+                      "name": "${BUCKET_NAME}/values/values.dev.yaml",
+                      "reference": "${BUCKET_NAME}/values/values.dev.yaml",
+                      "type": "s3/object"
+                  },
+                  {
+                      "name": "${BUCKET_NAME}/chart.tgz",
+                      "reference": "${BUCKET_NAME}/chart.tgz",
+                      "type": "s3/object"
+                  }
+              ],
+              "parameters": {
+          		"commitSha": "${IMAGE_TAG}"
+          	}
+          }
+          EOF
+          )
+          PAYLOAD=$([[ "$ENVIRONMENT" == "production" ]] && echo $PAYLOAD_PROD || echo $PAYLOAD_DEV)
+          curl -X POST -H "Content-Type: application/json" -u ${SPINNAKER_AUTH_USERNAME}:${SPINNAKER_AUTH_PASSWORD} -d "${PAYLOAD}" ${WEBHOOK_URL}
