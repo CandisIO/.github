@@ -1,0 +1,42 @@
+name: Publish
+
+on:
+  workflow_call:
+    secrets:
+      PUBLISH_PACKAGES:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 16.14.2
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.14.2
+
+      - name: Setup npm
+        run: |
+          npm set @candisio:registry=https://npm.pkg.github.com/candisio
+          npm set "//npm.pkg.github.com/:_authToken=${{ secrets.PUBLISH_PACKAGES }}"
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm run bootstrap
+
+      - name: "Version and publish"
+        env:
+          GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor}}@users.noreply.github.com"
+
+          npm run bump-version
+          npm run publish
