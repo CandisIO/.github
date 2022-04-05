@@ -63,7 +63,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Create ECR repository and set policy
+      - name: Ensure ECR repository and access policy
         id: create-ecr-repository
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
