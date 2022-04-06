@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          token: ${{ secrets.PUBLISH_PACKAGES }}
 
       - name: Use Node.js 16.14.2
         uses: actions/setup-node@v1
@@ -43,7 +44,7 @@ jobs:
       - name: Generate new client
         env:
           GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
-        if: ${{ env.GENERATE_CLIENT == true }}
+        if: ${{ env.GENERATE_CLIENT == 'true' }}
         run: |
           @candisio/common generate-swagger && cd ./packages/sdk && npm run oapi-generate
 
@@ -54,6 +55,10 @@ jobs:
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
+
+          git add ./packages
+          git commit -m "feat: updated packages [skip ci]"
+          git push
 
           lerna run tsc
 
