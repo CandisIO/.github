@@ -69,12 +69,12 @@ jobs:
 
           git diff-index --quiet HEAD || git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push
 
-          lerna run tsc
-
           if [ "$ENVIRONMENT" == "production" ]
           then
-            lerna publish from-git --yes
             lerna version --conventional-commits --yes
+            lerna run tsc
+            lerna publish from-git --yes
           else
+            lerna run tsc
             lerna publish from-git --yes --canary
           fi
