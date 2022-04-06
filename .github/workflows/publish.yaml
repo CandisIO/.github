@@ -20,15 +20,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout with personal token
+        uses: actions/checkout@v2
+        env:
+          GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
+        if: ${{ env.GENERATE_CLIENT == 'true' }}
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PUBLISH_PACKAGES }}
+
       - name: Checkout
         uses: actions/checkout@v2
         env:
-          PERSONAL_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
-          GITHUB_TOKEN: ${{ github.token }}
           GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
+        if: ${{ env.GENERATE_CLIENT == 'false' }}
         with:
           fetch-depth: 0
-          token: $([[ "GENERATE_CLIENT" == "true" ]] && echo $PERSONAL_TOKEN || echo $GITHUB_TOKEN)
 
       - name: Use Node.js 16.14.2
         uses: actions/setup-node@v1
