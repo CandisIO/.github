@@ -49,7 +49,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install && npm i lerna @candisio/common -g
+          npm install && npm i lerna -g
           lerna bootstrap
 
       - name: Generate new client
@@ -57,7 +57,8 @@ jobs:
           GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
         if: ${{ env.GENERATE_CLIENT == 'true' }}
         run: |
-          @candisio/common generate-swagger && cd ./packages/sdk && npm run oapi-generate
+          npm run build
+          npx @candis/common generate-swagger && cd ./packages/sdk && npm run oapi-generate
 
       - name: "Version and publish"
         env:
