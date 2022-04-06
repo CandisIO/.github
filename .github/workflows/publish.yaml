@@ -58,7 +58,7 @@ jobs:
         if: ${{ env.GENERATE_CLIENT == 'true' }}
         run: |
           npm run build
-          npx @candis/common generate-swagger && cd ./packages/sdk && npm run oapi-generate
+          npx @candisio/common generate-swagger && cd ./packages/sdk && npm run oapi-generate
 
       - name: "Version and publish"
         env:
