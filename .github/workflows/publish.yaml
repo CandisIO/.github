@@ -28,7 +28,7 @@ jobs:
           GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
         with:
           fetch-depth: 0
-          token: ${{ [[ "GENERATE_CLIENT" == "true" ]] && echo $PERSONAL_TOKEN || echo $GITHUB_TOKEN }}
+          token: ${{ $([[ "GENERATE_CLIENT" == "true" ]] && echo $PERSONAL_TOKEN || echo $GITHUB_TOKEN) }}
 
       - name: Use Node.js 16.14.2
         uses: actions/setup-node@v1
