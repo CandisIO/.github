@@ -22,9 +22,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        env:
+          PERSONAL_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
         with:
           fetch-depth: 0
-          token: ${{ secrets.PUBLISH_PACKAGES }}
+          token: ${{ [[ "GENERATE_CLIENT" == "true" ]] && echo $PERSONAL_TOKEN || echo $GITHUB_TOKEN }}
 
       - name: Use Node.js 16.14.2
         uses: actions/setup-node@v1
@@ -56,9 +60,7 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
 
-          git add ./packages
-          git commit -m "feat: updated packages [skip ci]"
-          git push
+          git diff-index --quiet HEAD || git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push
 
           lerna run tsc
 
