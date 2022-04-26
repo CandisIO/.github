@@ -8,10 +8,29 @@ on:
 
 env:
   MONGO_URL: 'mongodb://localhost:27017/candis-automatic-tests?replicaSet=rs0'
+  POSTGRESQL_HOST: localhost
+  POSTGRESQL_PORT: 5432
+  POSTGRESQL_DATABASE: postgres
+  POSTGRESQL_PASSWORD: postgres
+  POSTGRESQL_USERNAME: postgres
 
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     strategy:
       matrix:
         mongodb-version: ['4.4']
