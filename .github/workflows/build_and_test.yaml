@@ -8,11 +8,11 @@ on:
 
 env:
   MONGO_URL: 'mongodb://localhost:27017/candis-automatic-tests?replicaSet=rs0'
-  POSTGRESQL_HOST: localhost
-  POSTGRESQL_PORT: 5432
-  POSTGRESQL_DATABASE: postgres
-  POSTGRESQL_PASSWORD: postgres
-  POSTGRESQL_USERNAME: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_USER: postgres
 
 jobs:
   build_and_test:
