@@ -49,7 +49,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install && npm i lerna -g
+          npm install && npm i lerna ts-node tsconfig-paths -g
           lerna bootstrap
 
       - name: Generate new client
@@ -58,7 +58,7 @@ jobs:
         if: ${{ env.GENERATE_CLIENT == 'true' }}
         run: |
           npm run build
-          npx @candisio/common generate-swagger && cd ./packages/sdk && npm run oapi-generate
+          ts-node -r tsconfig-paths/register ./node_modules/@candisio/common/lib/cli.js generate-swagger --appModuleSrc=/src/app.module.ts && cd ./packages/sdk && npm run oapi-generate
 
       - name: "Version and publish"
         env:
