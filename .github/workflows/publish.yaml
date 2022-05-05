@@ -68,10 +68,9 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
 
-          git diff-index --quiet HEAD || git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push
-
           if [ "$ENVIRONMENT" == "production" ]
           then
+            git diff-index --quiet HEAD || git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push
             lerna version --conventional-commits --yes
             lerna run tsc
             lerna publish from-git --yes
