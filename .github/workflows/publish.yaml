@@ -75,6 +75,7 @@ jobs:
             lerna run tsc
             lerna publish from-git --yes
           else
+            git add ./packages && git commit -m "feat: updated canary packages [skip ci]"
             lerna run tsc
             lerna publish from-git --yes --canary
           fi
