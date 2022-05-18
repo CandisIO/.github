@@ -73,8 +73,8 @@ jobs:
 
           if [ "$ENVIRONMENT" == "production" ]
           then
-            lerna publish from-git --yes
             lerna version --conventional-commits --yes
+            lerna publish from-git --yes
           else
             lerna publish from-git --yes --canary
           fi
