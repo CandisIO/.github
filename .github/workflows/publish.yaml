@@ -60,10 +60,30 @@ jobs:
           npm run build
           ts-node -r tsconfig-paths/register ./node_modules/@candisio/common/lib/cli.js generate-swagger --appModuleSrc=/src/app.module.ts && cd ./packages/sdk && npm run oapi-generate
 
-      - name: "Version and publish"
+      - name: "Version and publish - Packages"
         env:
           GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
           ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+        if: ${{ env.GENERATE_CLIENT == 'false' }}
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor}}@users.noreply.github.com"
+
+          lerna run tsc
+
+          if [ "$ENVIRONMENT" == "production" ]
+          then
+            lerna publish from-git --yes
+            lerna version --conventional-commits --yes
+          else
+            lerna publish from-git --yes --canary
+          fi
+
+      - name: "Version and publish - SDK"
+        env:
+          GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
+          ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+        if: ${{ env.GENERATE_CLIENT == 'true' }}
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
