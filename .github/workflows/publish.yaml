@@ -64,6 +64,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
           ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+          GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
         if: ${{ env.GENERATE_CLIENT == 'true' }}
         run: |
           git config user.name "${{ github.actor }}"
@@ -81,7 +82,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
           ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
-        if: ${{ env.GENERATE_CLIENT != 'true'  }}
+          GENERATE_CLIENT: ${{ inputs.GENERATE_CLIENT }}
+        if: ${{ env.GENERATE_CLIENT == 'false'  }}
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
