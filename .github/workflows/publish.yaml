@@ -60,25 +60,6 @@ jobs:
           npm run build
           ts-node -r tsconfig-paths/register ./node_modules/@candisio/common-nestjs/lib/cli.js generate-swagger --appModuleSrc=/src/app.module.ts && cd ./packages/sdk && npm run oapi-generate
 
-      - name: "Version and publish - Packages"
-        env:
-          GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
-          ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
-        if: ${{ env.GENERATE_CLIENT == false }}
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor}}@users.noreply.github.com"
-
-          lerna run tsc
-
-          if [ "$ENVIRONMENT" == "production" ]
-          then
-            lerna version --conventional-commits --yes
-            lerna publish from-git --yes
-          else
-            lerna publish from-git --yes --canary
-          fi
-
       - name: "Version and publish - SDK"
         env:
           GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
@@ -93,4 +74,24 @@ jobs:
             git diff-index --quiet HEAD || (git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push && lerna version --conventional-commits --yes && lerna run tsc && lerna publish from-git --yes)
           else
             git diff-index --quiet HEAD || (git add ./packages && git commit -m "feat: updated canary packages [skip ci]" --allow-empty && lerna run tsc && lerna publish from-git --yes --canary)
+          fi
+
+
+      - name: "Version and publish - Packages"
+        env:
+          GH_TOKEN: ${{ secrets.PUBLISH_PACKAGES }}
+          ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+        if: ${{ env.GENERATE_CLIENT != 'true'  }}
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor}}@users.noreply.github.com"
+
+          lerna run tsc
+
+          if [ "$ENVIRONMENT" == "production" ]
+          then
+            lerna version --conventional-commits --yes
+            lerna publish from-git --yes
+          else
+            lerna publish from-git --yes --canary
           fi
