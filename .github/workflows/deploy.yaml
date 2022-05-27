@@ -60,6 +60,17 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        
+      - name: Create repository on Amazon ECR if do not exists
+        id: create-ecr-repo
+        env:
+          ECR_REPOSITORY: ${{ github.event.repository.name }}
+        run: |
+          EXIT_CODE=0
+          aws ecr describe-repositories --repository-name $ECR_REPOSITORY || EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 254 ]; then
+            aws ecr create-repository  --repository-name $ECR_REPOSITORY
+          fi
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
