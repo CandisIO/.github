@@ -193,5 +193,4 @@ jobs:
           )
           PAYLOAD=$([[ "$ENVIRONMENT" == "production" ]] && echo $PAYLOAD_PROD || echo $PAYLOAD_DEV)
           WEBHOOK_URL=$([[ "$ENVIRONMENT" == "production" ]] && echo $WEBHOOK_URL_PROD || echo $WEBHOOK_URL_DEV)
-          curl -X POST -H "Content-Type: application/json" -u ${SPINNAKER_AUTH_USERNAME}:${SPINNAKER_AUTH_PASSWORD} -d "${PAYLOAD}" ${
-          }
+          curl -X POST -H "Content-Type: application/json" -u ${SPINNAKER_AUTH_USERNAME}:${SPINNAKER_AUTH_PASSWORD} -d "${PAYLOAD}" ${WEBHOOK_URL}
