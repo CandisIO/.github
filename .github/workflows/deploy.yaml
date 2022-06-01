@@ -139,8 +139,8 @@ jobs:
         run: |
           BUILD_BUCKET=$([[ "$ENVIRONMENT" == "production" ]] && echo "can-prod-build-artifacts" || echo "can-dev-build-artifacts")
           BUCKET_NAME="s3://$BUILD_BUCKET/helm/$REPOZITORY_NAME"
-          WEBHOOK_URL_PROD: "https://spinnaker-api.my.candis.io/webhooks/webhook/$REPOZITORY_NAME"
-          WEBHOOK_URL_DEV: "https://spinnaker-api.my.candis.io/webhooks/webhook/$REPOZITORY_NAME-review"
+          WEBHOOK_URL_PROD="https://spinnaker-api.my.candis.io/webhooks/webhook/$REPOZITORY_NAME"
+          WEBHOOK_URL_DEV="https://spinnaker-api.my.candis.io/webhooks/webhook/$REPOZITORY_NAME-review"
           PAYLOAD_PROD=$(cat <<EOF
           {
               "artifacts": [
