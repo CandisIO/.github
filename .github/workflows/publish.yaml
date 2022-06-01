@@ -72,6 +72,7 @@ jobs:
 
           # output summary changes
           git diff-index --quiet HEAD && echo "no SDK changes"
+          echo "Expecting this command to echo"
           
           # publish SDK if required
           if [ "$ENVIRONMENT" == "production" ]
