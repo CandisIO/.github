@@ -73,8 +73,15 @@ jobs:
           # output summary changes
           echo "Echo repo changes"
           git diff-index --stat HEAD
-          git diff-index --quiet HEAD || echo "SDK changes 1"
-          git diff-index --quiet HEAD && echo "SDK changes 2"
+          git diff-index --quiet HEAD
+          echo "Exit code $?""
+          git diff-index --quiet --exit-code HEAD
+          echo "Exit code $?""
+          
+
+          
+          git diff-index --quiet --exit-code HEAD || echo "SDK changes 1"
+          git diff-index --quiet --exit-code HEAD && echo "SDK changes 2"
           
           # publish SDK if required
           if [ "$ENVIRONMENT" == "production" ]
