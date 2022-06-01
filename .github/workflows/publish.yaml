@@ -73,6 +73,8 @@ jobs:
           # output summary changes
           echo "Echo repo changes"
           git diff-index --stat HEAD
+          git --no-pager diff --compact-summary
+          echo "After stat command $?"
           git diff-index --quiet --exit-code HEAD; echo "Exit code $?"
           # git diff-index --quiet HEAD; echo "Exit code $?"
           
