@@ -71,9 +71,8 @@ jobs:
           git config user.email "${{ github.actor}}@users.noreply.github.com"
 
           # output summary changes
-          echo "Echo repo changes"
+          echo "Repository changes:"
           git diff-index --stat HEAD
-          git --no-pager diff --compact-summary
           echo "After diff command $?"
           
           # git diff-index --quiet --exit-code HEAD; echo "Exit code $?"
