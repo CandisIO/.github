@@ -71,7 +71,9 @@ jobs:
           git config user.email "${{ github.actor}}@users.noreply.github.com"
 
           # output summary changes
-          git diff-index --quiet HEAD && echo "no SDK changes"
+          echo "Repository changes:"
+          git diff-index --stat HEAD
+          echo "After diff command $?"
           
           # publish SDK if required
           if [ "$ENVIRONMENT" == "production" ]
