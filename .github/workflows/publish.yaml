@@ -72,15 +72,15 @@ jobs:
 
           # output summary changes
           echo "Repository changes:"
-          git diff-index --stat HEAD
+          git diff-index --stat HEAD ./packages
           echo "After diff command $?"
           
           # publish SDK if required
           if [ "$ENVIRONMENT" == "production" ]
           then
-            git diff-index --quiet HEAD || (git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push && lerna version --conventional-commits --yes && lerna run tsc && lerna publish from-git --yes)
+            git diff-index --quiet HEAD ./packages || (git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push && lerna version --conventional-commits --yes && lerna run tsc && lerna publish from-git --yes)
           else
-            git diff-index --quiet HEAD || (git add ./packages && git commit -m "feat: updated canary packages [skip ci]" --allow-empty && lerna run tsc && lerna publish from-git --yes --canary)
+            git diff-index --quiet HEAD ./packages || (git add ./packages && git commit -m "feat: updated canary packages [skip ci]" --allow-empty && lerna run tsc && lerna publish from-git --yes --canary)
           fi
 
 
