@@ -78,17 +78,12 @@ jobs:
           echo $REPO_CHANGES
           # -----------------------------------------------------------
           
-
           SDK_CHANGES=$(echo $REPO_CHANGES | head -c1 | wc -l)
-          # publish SDK changes for production
-          if [ $SDK_CHANGES -ne 0 && "$ENVIRONMENT" == "production" ]
-          then
+          if [ $SDK_CHANGES -ne 0 && "$ENVIRONMENT" == "production" ] ; then
+            # publish SDK changes for production
             git commit -m "feat: updated packages [skip ci]" && git push && lerna version --conventional-commits --yes && lerna run tsc && lerna publish from-git --yes
-          fi
-
-          # publish PR (canary) SDK changes
-          if [ $SDK_CHANGES -ne 0 && "$ENVIRONMENT" != "production" ]
-          then
+          elif [ $SDK_CHANGES -ne 0 && "$ENVIRONMENT" != "production" ]; then
+            # publish PR (canary) SDK changes
             git commit -m "feat: updated canary packages [skip ci]" --allow-empty && lerna run tsc && lerna publish from-git --yes --canary
           fi
 
