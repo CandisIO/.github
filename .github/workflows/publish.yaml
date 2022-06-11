@@ -70,17 +70,26 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor}}@users.noreply.github.com"
 
-          # output summary changes
-          echo "Repository changes:"
-          git diff-index --stat HEAD ./packages
-          echo "After diff command $?"
+          git add ./packages
           
-          # publish SDK if required
-          if [ "$ENVIRONMENT" == "production" ]
+          # -----------------------------------------------------------
+          # Output summary changesx
+          REPO_CHANGES=$(git --no-pager diff --numstat HEAD ./packages)
+          echo $REPO_CHANGES
+          # -----------------------------------------------------------
+          
+
+          SDK_CHANGES=$(echo $REPO_CHANGES | head -c1 | wc -l)
+          # publish SDK changes for production
+          if [ $SDK_CHANGES -ne 0 && "$ENVIRONMENT" == "production" ]
           then
-            git diff-index --quiet HEAD ./packages || (git add ./packages && git commit -m "feat: updated packages [skip ci]" && git push && lerna version --conventional-commits --yes && lerna run tsc && lerna publish from-git --yes)
-          else
-            git diff-index --quiet HEAD ./packages || (git add ./packages && git commit -m "feat: updated canary packages [skip ci]" --allow-empty && lerna run tsc && lerna publish from-git --yes --canary)
+            git commit -m "feat: updated packages [skip ci]" && git push && lerna version --conventional-commits --yes && lerna run tsc && lerna publish from-git --yes
+          fi
+
+          # publish PR (canary) SDK changes
+          if [ $SDK_CHANGES -ne 0 && "$ENVIRONMENT" != "production" ]
+          then
+            git commit -m "feat: updated canary packages [skip ci]" --allow-empty && lerna run tsc && lerna publish from-git --yes --canary
           fi
 
 
