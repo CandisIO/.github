@@ -78,7 +78,7 @@ jobs:
           # -----------------------------------------------------------
           
           # checks whether the git-diff command output any change
-          SDK_CHANGES=$(git --no-pager diff --numstat HEAD ./packages | head -c1 | wc -l)
+          SDK_CHANGES=$(git --no-pager diff --numstat HEAD ./packages | head -c1 | wc -c)
           echo "SDK_CHANGES - $SDK_CHANGES"
 
           if [[ $SDK_CHANGES -ne 0 && "$ENVIRONMENT" == "production" ]]; then
