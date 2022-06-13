@@ -2,6 +2,11 @@ name: Build and Test
 
 on:
   workflow_call:
+    inputs:
+      ENABLE_KAFKA:
+        default: false
+        required: false
+        type: boolean
     secrets:
       PUBLISH_PACKAGES:
         required: true
@@ -45,6 +50,12 @@ jobs:
           mongodb-replica-set: rs0
           mongodb-db: candis
           mongodb-port: 27017
+
+      - name: Start Bitname Kafka
+        env:
+          ENABLE_KAFKA: ${{ inputs.ENABLE_KAFKA }}
+        if: ${{ env.ENABLE_KAFKA == 'true' }}
+        uses: bbcCorp/kafka-actions@v1
 
       - name: Use Node.js 16.13.2
         uses: actions/setup-node@v1
