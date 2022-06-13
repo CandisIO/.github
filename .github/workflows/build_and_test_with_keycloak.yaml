@@ -1,0 +1,94 @@
+name: Build and Test
+
+on:
+  workflow_call:
+    inputs:
+      ENABLE_KAFKA:
+        default: false
+        required: false
+        type: boolean
+    secrets:
+      PUBLISH_PACKAGES:
+        required: true
+
+env:
+  MONGO_URL: 'mongodb://localhost:27017/candis-automatic-tests?replicaSet=rs0'
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_USER: postgres
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      keycloak:
+        image: jboss/keycloak:12.0.4
+        ports:
+          - 9001:8080
+        env:
+          KEYCLOAK_USER: ${{env.KEYCLOAK_USERNAME}}
+          KEYCLOAK_PASSWORD: ${{env.KEYCLOAK_PASSWORD}}
+        options: >-
+          --health-interval 20s
+          --health-retries 10
+          --health-cmd "curl http://localhost:8080/auth/"
+
+    strategy:
+      matrix:
+        mongodb-version: ['4.4']
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Start MongoDB Replica Set
+        uses: supercharge/mongodb-github-action@1.7.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
+          mongodb-replica-set: rs0
+          mongodb-db: candis
+          mongodb-port: 27017
+
+      - name: Start Bitname Kafka
+        env:
+          ENABLE_KAFKA: ${{ inputs.ENABLE_KAFKA }}
+        if: ${{ env.ENABLE_KAFKA == 'true' }}
+        uses: bbcCorp/kafka-actions@v1
+
+      - name: Use Node.js 16.13.2
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.13.2
+
+      - name: Setup npm
+        run: |
+          npm set @candisio:registry=https://npm.pkg.github.com
+          npm set "//npm.pkg.github.com/:_authToken=${{ secrets.PUBLISH_PACKAGES }}"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit and Integration Test
+        run: npm run test:ci
+
+      - name: E2E Test
+        run: npm run test:e2e
+
+      - name: Build
+        run: npm run build
