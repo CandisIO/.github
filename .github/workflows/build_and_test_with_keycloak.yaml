@@ -47,8 +47,9 @@ jobs:
           KEYCLOAK_USER: ${{env.KEYCLOAK_USERNAME}}
           KEYCLOAK_PASSWORD: ${{env.KEYCLOAK_PASSWORD}}
         options: >-
-          --health-interval 20s
-          --health-retries 10
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
           --health-cmd "curl http://localhost:8080/auth/"
 
     strategy:
